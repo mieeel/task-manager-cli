@@ -37,7 +37,6 @@ public:
             std::stringstream ss(line);
             std::string idStr, statusStr, prioStr, title;
 
-            // Suporta o formato novo com prioridade (ID|Status|Priority|Title)
             if (std::getline(ss, idStr, '|') &&
                 std::getline(ss, statusStr, '|') &&
                 std::getline(ss, prioStr, '|') &&

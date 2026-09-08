@@ -20,7 +20,6 @@ void enableWindowsANSI() {
 }
 #endif
 
-// Converte string de prioridade (ex: "alta", "high", "p:1", "p:alta") para Enum Priority
 Priority parsePriority(std::string pStr) {
     std::transform(pStr.begin(), pStr.end(), pStr.begin(), ::tolower);
     if (pStr.find("alta") != std::string::npos || pStr.find("high") != std::string::npos || pStr == "3" || pStr == "p:3" || pStr == "p:alta") {
@@ -35,7 +34,7 @@ Priority parsePriority(std::string pStr) {
 void printHelp() {
     std::cout << Color::BOLD << "=== GERENCIADOR DE TAREFAS (CLI) ===\n\n" << Color::RESET
               << "Uso:\n"
-              << "  task                               Listar apenas tarefas PENDENTES\n"
+              << "  task                               Listar apenas tarefas PENDENTES (Ordenadas por prioridade)\n"
               << "  tasks                              Listar TODAS as tarefas\n"
               << "  task done                          Listar apenas tarefas CONCLUIDAS\n"
               << "  task add \"Minha tarefa\"           Adicionar tarefa (Prioridade Media padrao)\n"
@@ -86,7 +85,6 @@ int main(int argc, char* argv[]) {
         Priority priority = Priority::Medium;
         std::string title = "";
 
-        // Verifica se o último argumento é uma flag de prioridade (ex: p:alta, p:baixa, alta)
         std::string lastArg = argv[argc - 1];
         if (lastArg.rfind("p:", 0) == 0 || lastArg == "alta" || lastArg == "media" || lastArg == "baixa" || lastArg == "high" || lastArg == "low") {
             priority = parsePriority(lastArg);

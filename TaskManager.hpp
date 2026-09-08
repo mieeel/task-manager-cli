@@ -11,6 +11,18 @@ private:
     std::vector<Task> tasks;
     int nextId = 1;
 
+    // Função utilitária privada para retornar o vetor ordenado por prioridade
+    std::vector<Task> getSortedTasks() const {
+        std::vector<Task> sorted = tasks;
+        std::sort(sorted.begin(), sorted.end(), [](const Task& a, const Task& b) {
+            if (a.getPriority() != b.getPriority()) {
+                return static_cast<int>(a.getPriority()) > static_cast<int>(b.getPriority());
+            }
+            return a.getId() < b.getId(); // Se a prioridade for igual, ordena por ID
+        });
+        return sorted;
+    }
+
 public:
     const std::vector<Task>& getTasks() const {
         return tasks;
@@ -35,14 +47,17 @@ public:
             std::cout << Color::GRAY << "Nenhuma tarefa cadastrada.\n" << Color::RESET;
             return;
         }
-        for (const auto& task : tasks) {
+        auto sortedTasks = getSortedTasks();
+        for (const auto& task : sortedTasks) {
             task.print();
         }
     }
 
     void listTasksByStatus(bool showCompleted) const {
         bool foundAny = false;
-        for (const auto& task : tasks) {
+        auto sortedTasks = getSortedTasks();
+
+        for (const auto& task : sortedTasks) {
             if (task.isCompleted() == showCompleted) {
                 task.print();
                 foundAny = true;

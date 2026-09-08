@@ -29,15 +29,6 @@ public:
         status = TaskStatus::Completed; 
     }
 
-    std::string getPriorityString() const {
-        switch (priority) {
-            case Priority::High:   return "ALTA";
-            case Priority::Medium: return "MED ";
-            case Priority::Low:    return "BAIXA";
-        }
-        return "MED ";
-    }
-
     std::string getColoredPriority() const {
         switch (priority) {
             case Priority::High:   
