@@ -4,9 +4,23 @@
 #include <iomanip>
 #include "TaskManager.hpp"
 #include "StorageManager.hpp"
+#include "Colors.hpp"
+
+#ifdef _WIN32
+#include <windows.h>
+
+void enableWindowsANSI() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) return;
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    SetConsoleMode(hOut, dwMode);
+}
+#endif
 
 void printHelp() {
-    std::cout << "=== GERENCIADOR DE TAREFAS (CLI) ===\n\n"
+    std::cout << Color::BOLD << "=== GERENCIADOR DE TAREFAS (CLI) ===\n\n" << Color::RESET
               << "Uso:\n"
               << "  task                       Listar apenas tarefas PENDENTES\n"
               << "  tasks                      Listar TODAS as tarefas\n"
@@ -19,6 +33,7 @@ void printHelp() {
 
 int main(int argc, char* argv[]) {
 #ifdef _WIN32
+    enableWindowsANSI();
     const char* userHome = std::getenv("USERPROFILE");
     std::string filepath = (userHome ? std::string(userHome) + "\\.tasks.txt" : "tasks.txt");
 #else
@@ -34,14 +49,14 @@ int main(int argc, char* argv[]) {
     
     // Suporte ao comando 'tasks' para listar tudo diretamente
     if (progName.find("tasks") != std::string::npos && argc < 2) {
-        std::cout << "--- TODAS AS TAREFAS ---\n";
+        std::cout << Color::BOLD << "--- TODAS AS TAREFAS ---\n" << Color::RESET;
         manager.listAllTasks();
         return 0;
     }
 
     // Executável chamado como 'task' sem argumentos: Pendentes
     if (argc < 2) {
-        std::cout << "--- TAREFAS PENDENTES ---\n";
+        std::cout << Color::BOLD << "--- TAREFAS PENDENTES ---\n" << Color::RESET;
         manager.listTasksByStatus(false);
         return 0;
     }
@@ -52,7 +67,7 @@ int main(int argc, char* argv[]) {
         printHelp();
     }
     else if (command == "done") {
-        std::cout << "--- TAREFAS CONCLUIDAS ---\n";
+        std::cout << Color::BOLD << "--- TAREFAS CONCLUIDAS ---\n" << Color::RESET;
         manager.listTasksByStatus(true);
     }
     else if (command == "add" && argc >= 3) {
@@ -64,19 +79,19 @@ int main(int argc, char* argv[]) {
 
         manager.addTask(title);
         storage.save(manager);
-        std::cout << "✔ Tarefa adicionada: \"" << title << "\"\n";
+        std::cout << Color::GREEN << "✔ Tarefa adicionada: \"" << title << "\"\n" << Color::RESET;
     }
     else if (command == "x" && argc >= 3) {
         try {
             int id = std::stoi(argv[2]);
             if (manager.markTaskCompleted(id)) {
                 storage.save(manager);
-                std::cout << "✔ Tarefa #" << std::setw(3) << std::setfill('0') << id << " marcada como concluida!\n";
+                std::cout << Color::GREEN << "✔ Tarefa #" << std::setw(3) << std::setfill('0') << id << " marcada como concluida!\n" << Color::RESET;
             } else {
-                std::cout << "❌ Tarefa #" << std::setw(3) << std::setfill('0') << id << " nao encontrada.\n";
+                std::cout << Color::RED << "❌ Tarefa #" << std::setw(3) << std::setfill('0') << id << " nao encontrada.\n" << Color::RESET;
             }
         } catch (...) {
-            std::cout << "❌ ID invalido fornecido.\n";
+            std::cout << Color::RED << "❌ ID invalido fornecido.\n" << Color::RESET;
         }
     } 
     else if ((command == "rm" || command == "del") && argc >= 3) {
@@ -84,16 +99,16 @@ int main(int argc, char* argv[]) {
             int id = std::stoi(argv[2]);
             if (manager.deleteTask(id)) {
                 storage.save(manager);
-                std::cout << "🗑️ Tarefa #" << std::setw(3) << std::setfill('0') << id << " removida com sucesso!\n";
+                std::cout << Color::RED << "🗑️ Tarefa #" << std::setw(3) << std::setfill('0') << id << " removida com sucesso!\n" << Color::RESET;
             } else {
-                std::cout << "❌ Tarefa #" << std::setw(3) << std::setfill('0') << id << " nao encontrada.\n";
+                std::cout << Color::RED << "❌ Tarefa #" << std::setw(3) << std::setfill('0') << id << " nao encontrada.\n" << Color::RESET;
             }
         } catch (...) {
-            std::cout << "❌ ID invalido fornecido.\n";
+            std::cout << Color::RED << "❌ ID invalido fornecido.\n" << Color::RESET;
         }
     }
     else {
-        std::cout << "Comando nao reconhecido. Use 'task --help' para ver as opcoes.\n";
+        std::cout << Color::YELLOW << "Comando nao reconhecido. Use 'task --help' para ver as opcoes.\n" << Color::RESET;
     }
 
     return 0;

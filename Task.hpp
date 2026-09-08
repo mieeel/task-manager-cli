@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include "Colors.hpp"
 
 enum class TaskStatus { Pending, Completed };
 
@@ -26,9 +27,15 @@ public:
     }
 
     void print() const {
-        std::cout << "[" << (isCompleted() ? "X" : " ") << "] "
-                  << std::setw(3) << std::setfill('0') << id << ". " 
-                  << title << "\n";
+        if (isCompleted()) {
+            std::cout << Color::GREEN << "[X] " << Color::RESET
+                      << Color::GRAY << std::setw(3) << std::setfill('0') << id << ". "
+                      << title << Color::RESET << "\n";
+        } else {
+            std::cout << Color::YELLOW << "[ ] " << Color::RESET
+                      << Color::BOLD << std::setw(3) << std::setfill('0') << id << ". " << Color::RESET
+                      << Color::CYAN << title << Color::RESET << "\n";
+        }
     }
 };
 

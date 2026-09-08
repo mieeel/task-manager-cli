@@ -32,7 +32,7 @@ public:
 
     void listAllTasks() const {
         if (tasks.empty()) {
-            std::cout << "Nenhuma tarefa cadastrada.\n";
+            std::cout << Color::GRAY << "Nenhuma tarefa cadastrada.\n" << Color::RESET;
             return;
         }
         for (const auto& task : tasks) {
@@ -51,9 +51,9 @@ public:
 
         if (!foundAny) {
             if (showCompleted) {
-                std::cout << "Nenhuma tarefa concluida por enquanto.\n";
+                std::cout << Color::GRAY << "Nenhuma tarefa concluida por enquanto.\n" << Color::RESET;
             } else {
-                std::cout << "Nenhuma tarefa pendente! Tudo em dia! 🎉\n";
+                std::cout << Color::GREEN << "Nenhuma tarefa pendente! Tudo em dia! 🎉\n" << Color::RESET;
             }
         }
     }
