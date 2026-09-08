@@ -12,40 +12,43 @@ private:
     int nextId = 1;
 
 public:
-    // Retorna a referência constante do vetor para leitura/salvamento no arquivo
     const std::vector<Task>& getTasks() const {
         return tasks;
     }
 
-    // Adiciona uma nova tarefa via comando do usuário
     void addTask(const std::string& title) {
         tasks.emplace_back(nextId++, title);
     }
 
-    // Recria uma tarefa existente vinda do arquivo mantendo seu ID e status
     void loadTask(int id, const std::string& title, bool completed) {
         tasks.emplace_back(id, title);
         if (completed) {
             tasks.back().markAsCompleted();
         }
-        // Garante que o próximo ID gerado seja maior que o maior ID já carregado
         if (id >= nextId) {
             nextId = id + 1;
         }
     }
 
-    // Lista todas as tarefas cadastradas no terminal
-    void listTasks() const {
-        if (tasks.empty()) {
-            std::cout << "Nenhuma tarefa cadastrada.\n";
-            return;
-        }
+    // Lista apenas as PENDENTES ou apenas as CONCLUÍDAS
+    void listTasksByStatus(bool showCompleted) const {
+        bool foundAny = false;
         for (const auto& task : tasks) {
-            task.print();
+            if (task.isCompleted() == showCompleted) {
+                task.print();
+                foundAny = true;
+            }
+        }
+
+        if (!foundAny) {
+            if (showCompleted) {
+                std::cout << "Nenhuma tarefa concluida por enquanto.\n";
+            } else {
+                std::cout << "Nenhuma tarefa pendente! Tudo em dia! 🎉\n";
+            }
         }
     }
 
-    // Marca uma tarefa como concluída pelo seu ID
     bool markTaskCompleted(int id) {
         auto it = std::find_if(tasks.begin(), tasks.end(), [id](const Task& t) {
             return t.getId() == id;
