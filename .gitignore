@@ -1,0 +1,35 @@
+# Executáveis gerados
+*.exe
+*.out
+*.app
+app
+
+# Arquivos de objetos e bibliotecas compiladas
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+
+# Pastas de build (CMake / VS Code)
+build/
+bin/
+out/
+.cache/
+
+# Configurações do VS Code
+.vscode/
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# Configurações do CLion e JetBrains
+.idea/
+cmake-build-debug/
+cmake-build-release/
+
+# Arquivos temporários e de dados gerados pelo seu aplicativo
+*.tmp
+*.log
+tasks.txt
+tasks.csv
