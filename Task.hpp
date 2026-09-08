@@ -32,13 +32,13 @@ public:
     std::string getColoredPriority() const {
         switch (priority) {
             case Priority::High:   
-                return Color::BOLD + Color::RED + "[ALTA]" + Color::RESET;
+                return Color::BOLD + Color::RED + "[HIGH]" + Color::RESET;
             case Priority::Medium: 
-                return Color::YELLOW + "[MÉD ]" + Color::RESET;
+                return Color::YELLOW + "[MED ]" + Color::RESET;
             case Priority::Low:    
-                return Color::BLUE + "[BAIXA]" + Color::RESET;
+                return Color::BLUE + "[LOW ]" + Color::RESET;
         }
-        return Color::YELLOW + "[MÉD ]" + Color::RESET;
+        return Color::YELLOW + "[MED ]" + Color::RESET;
     }
 
     void print() const {

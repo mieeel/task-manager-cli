@@ -11,14 +11,13 @@ private:
     std::vector<Task> tasks;
     int nextId = 1;
 
-    // Função utilitária privada para retornar o vetor ordenado por prioridade
     std::vector<Task> getSortedTasks() const {
         std::vector<Task> sorted = tasks;
         std::sort(sorted.begin(), sorted.end(), [](const Task& a, const Task& b) {
             if (a.getPriority() != b.getPriority()) {
                 return static_cast<int>(a.getPriority()) > static_cast<int>(b.getPriority());
             }
-            return a.getId() < b.getId(); // Se a prioridade for igual, ordena por ID
+            return a.getId() < b.getId();
         });
         return sorted;
     }
@@ -44,7 +43,7 @@ public:
 
     void listAllTasks() const {
         if (tasks.empty()) {
-            std::cout << Color::GRAY << "Nenhuma tarefa cadastrada.\n" << Color::RESET;
+            std::cout << Color::GRAY << "No tasks found.\n" << Color::RESET;
             return;
         }
         auto sortedTasks = getSortedTasks();
@@ -66,9 +65,9 @@ public:
 
         if (!foundAny) {
             if (showCompleted) {
-                std::cout << Color::GRAY << "Nenhuma tarefa concluida por enquanto.\n" << Color::RESET;
+                std::cout << Color::GRAY << "No completed tasks yet.\n" << Color::RESET;
             } else {
-                std::cout << Color::GREEN << "Nenhuma tarefa pendente! Tudo em dia! 🎉\n" << Color::RESET;
+                std::cout << Color::GREEN << "No pending tasks! All caught up! 🎉\n" << Color::RESET;
             }
         }
     }
@@ -95,6 +94,17 @@ public:
             return true;
         }
         return false;
+    }
+
+    int clearCompletedTasks() {
+        int originalSize = tasks.size();
+        tasks.erase(
+            std::remove_if(tasks.begin(), tasks.end(), [](const Task& t) {
+                return t.isCompleted();
+            }),
+            tasks.end()
+        );
+        return originalSize - tasks.size();
     }
 };
 

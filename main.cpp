@@ -22,26 +22,27 @@ void enableWindowsANSI() {
 
 Priority parsePriority(std::string pStr) {
     std::transform(pStr.begin(), pStr.end(), pStr.begin(), ::tolower);
-    if (pStr.find("alta") != std::string::npos || pStr.find("high") != std::string::npos || pStr == "3" || pStr == "p:3" || pStr == "p:alta") {
+    if (pStr.find("high") != std::string::npos || pStr == "3" || pStr == "p:3" || pStr == "p:high") {
         return Priority::High;
     }
-    if (pStr.find("baixa") != std::string::npos || pStr.find("low") != std::string::npos || pStr == "1" || pStr == "p:1" || pStr == "p:baixa") {
+    if (pStr.find("low") != std::string::npos || pStr == "1" || pStr == "p:1" || pStr == "p:low") {
         return Priority::Low;
     }
     return Priority::Medium;
 }
 
 void printHelp() {
-    std::cout << Color::BOLD << "=== GERENCIADOR DE TAREFAS (CLI) ===\n\n" << Color::RESET
-              << "Uso:\n"
-              << "  task                               Listar apenas tarefas PENDENTES (Ordenadas por prioridade)\n"
-              << "  tasks                              Listar TODAS as tarefas\n"
-              << "  task done                          Listar apenas tarefas CONCLUIDAS\n"
-              << "  task add \"Minha tarefa\"           Adicionar tarefa (Prioridade Media padrao)\n"
-              << "  task add \"Minha tarefa\" p:alta     Adicionar com prioridade ALTA, MEDIA ou BAIXA\n"
-              << "  task x <ID>                        Marcar tarefa como concluida\n"
-              << "  task rm <ID>                       Remover permanentemente uma tarefa\n"
-              << "  task --help                        Exibir este menu de ajuda\n";
+    std::cout << Color::BOLD << "=== TASK MANAGER CLI ===\n\n" << Color::RESET
+              << "Usage:\n"
+              << "  task [list|ls]             List pending tasks (Default)\n"
+              << "  task list --all (-a)       List ALL tasks\n"
+              << "  task list --done           List COMPLETED tasks\n"
+              << "  task add \"Task title\"     Add a new task (Medium priority by default)\n"
+              << "  task add \"Task title\" p:high Add a task with HIGH, MED, or LOW priority\n"
+              << "  task done <ID>             Mark task as completed (alias: task x <ID>)\n"
+              << "  task rm <ID>               Remove a task permanently (alias: task del <ID>)\n"
+              << "  task clear                 Remove all completed tasks\n"
+              << "  task --help (-h)           Show this help menu\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -58,35 +59,41 @@ int main(int argc, char* argv[]) {
     StorageManager storage(filepath);
     storage.load(manager);
 
-    std::string progName = argv[0];
-    
-    if (progName.find("tasks") != std::string::npos && argc < 2) {
-        std::cout << Color::BOLD << "--- TODAS AS TAREFAS ---\n" << Color::RESET;
-        manager.listAllTasks();
-        return 0;
-    }
-
+    // Default command (no arguments provided)
     if (argc < 2) {
-        std::cout << Color::BOLD << "--- TAREFAS PENDENTES ---\n" << Color::RESET;
+        std::cout << Color::BOLD << "--- PENDING TASKS ---\n" << Color::RESET;
         manager.listTasksByStatus(false);
         return 0;
     }
 
     std::string command = argv[1];
 
-    if (command == "--help" || command == "-h") {
+    if (command == "--help" || command == "-h" || command == "help") {
         printHelp();
     }
-    else if (command == "done") {
-        std::cout << Color::BOLD << "--- TAREFAS CONCLUIDAS ---\n" << Color::RESET;
-        manager.listTasksByStatus(true);
+    else if (command == "list" || command == "ls") {
+        if (argc >= 3) {
+            std::string subflag = argv[2];
+            if (subflag == "--all" || subflag == "-a") {
+                std::cout << Color::BOLD << "--- ALL TASKS ---\n" << Color::RESET;
+                manager.listAllTasks();
+            } else if (subflag == "--done") {
+                std::cout << Color::BOLD << "--- COMPLETED TASKS ---\n" << Color::RESET;
+                manager.listTasksByStatus(true);
+            } else {
+                std::cout << Color::YELLOW << "Unknown flag. Use 'task --help' for details.\n" << Color::RESET;
+            }
+        } else {
+            std::cout << Color::BOLD << "--- PENDING TASKS ---\n" << Color::RESET;
+            manager.listTasksByStatus(false);
+        }
     }
     else if (command == "add" && argc >= 3) {
         Priority priority = Priority::Medium;
         std::string title = "";
 
         std::string lastArg = argv[argc - 1];
-        if (lastArg.rfind("p:", 0) == 0 || lastArg == "alta" || lastArg == "media" || lastArg == "baixa" || lastArg == "high" || lastArg == "low") {
+        if (lastArg.rfind("p:", 0) == 0 || lastArg == "high" || lastArg == "med" || lastArg == "low") {
             priority = parsePriority(lastArg);
             for (int i = 2; i < argc - 1; ++i) {
                 if (i > 2) title += " ";
@@ -101,19 +108,19 @@ int main(int argc, char* argv[]) {
 
         manager.addTask(title, priority);
         storage.save(manager);
-        std::cout << Color::GREEN << "✔ Tarefa adicionada com sucesso!\n" << Color::RESET;
+        std::cout << Color::GREEN << "✔ Task added successfully!\n" << Color::RESET;
     }
-    else if (command == "x" && argc >= 3) {
+    else if ((command == "done" || command == "x") && argc >= 3) {
         try {
             int id = std::stoi(argv[2]);
             if (manager.markTaskCompleted(id)) {
                 storage.save(manager);
-                std::cout << Color::GREEN << "✔ Tarefa #" << std::setw(3) << std::setfill('0') << id << " marcada como concluida!\n" << Color::RESET;
+                std::cout << Color::GREEN << "✔ Task #" << std::setw(3) << std::setfill('0') << id << " marked as completed!\n" << Color::RESET;
             } else {
-                std::cout << Color::RED << "❌ Tarefa #" << std::setw(3) << std::setfill('0') << id << " nao encontrada.\n" << Color::RESET;
+                std::cout << Color::RED << "❌ Task #" << std::setw(3) << std::setfill('0') << id << " not found.\n" << Color::RESET;
             }
         } catch (...) {
-            std::cout << Color::RED << "❌ ID invalido fornecido.\n" << Color::RESET;
+            std::cout << Color::RED << "❌ Invalid ID provided.\n" << Color::RESET;
         }
     } 
     else if ((command == "rm" || command == "del") && argc >= 3) {
@@ -121,16 +128,25 @@ int main(int argc, char* argv[]) {
             int id = std::stoi(argv[2]);
             if (manager.deleteTask(id)) {
                 storage.save(manager);
-                std::cout << Color::RED << "🗑️ Tarefa #" << std::setw(3) << std::setfill('0') << id << " removida com sucesso!\n" << Color::RESET;
+                std::cout << Color::RED << "🗑️ Task #" << std::setw(3) << std::setfill('0') << id << " removed successfully!\n" << Color::RESET;
             } else {
-                std::cout << Color::RED << "❌ Tarefa #" << std::setw(3) << std::setfill('0') << id << " nao encontrada.\n" << Color::RESET;
+                std::cout << Color::RED << "❌ Task #" << std::setw(3) << std::setfill('0') << id << " not found.\n" << Color::RESET;
             }
         } catch (...) {
-            std::cout << Color::RED << "❌ ID invalido fornecido.\n" << Color::RESET;
+            std::cout << Color::RED << "❌ Invalid ID provided.\n" << Color::RESET;
+        }
+    }
+    else if (command == "clear") {
+        int removedCount = manager.clearCompletedTasks();
+        if (removedCount > 0) {
+            storage.save(manager);
+            std::cout << Color::GREEN << "🧹 Removed " << removedCount << " completed task(s).\n" << Color::RESET;
+        } else {
+            std::cout << Color::GRAY << "No completed tasks to clear.\n" << Color::RESET;
         }
     }
     else {
-        std::cout << Color::YELLOW << "Comando nao reconhecido. Use 'task --help' para ver as opcoes.\n" << Color::RESET;
+        std::cout << Color::YELLOW << "Unknown command. Use 'task --help' to view available options.\n" << Color::RESET;
     }
 
     return 0;
