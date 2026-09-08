@@ -21,6 +21,7 @@ public:
         for (const auto& task : manager.getTasks()) {
             file << task.getId() << "|" 
                  << (task.isCompleted() ? "1" : "0") << "|" 
+                 << static_cast<int>(task.getPriority()) << "|"
                  << task.getTitle() << "\n";
         }
     }
@@ -34,16 +35,19 @@ public:
             if (line.empty()) continue;
 
             std::stringstream ss(line);
-            std::string idStr, statusStr, title;
+            std::string idStr, statusStr, prioStr, title;
 
+            // Suporta o formato novo com prioridade (ID|Status|Priority|Title)
             if (std::getline(ss, idStr, '|') &&
                 std::getline(ss, statusStr, '|') &&
+                std::getline(ss, prioStr, '|') &&
                 std::getline(ss, title)) {
                 
                 int id = std::stoi(idStr);
                 bool completed = (statusStr == "1");
+                Priority priority = static_cast<Priority>(std::stoi(prioStr));
 
-                manager.loadTask(id, title, completed);
+                manager.loadTask(id, title, completed, priority);
             }
         }
     }

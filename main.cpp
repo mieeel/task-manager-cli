@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdlib>
 #include <iomanip>
+#include <algorithm>
 #include "TaskManager.hpp"
 #include "StorageManager.hpp"
 #include "Colors.hpp"
@@ -19,16 +20,29 @@ void enableWindowsANSI() {
 }
 #endif
 
+// Converte string de prioridade (ex: "alta", "high", "p:1", "p:alta") para Enum Priority
+Priority parsePriority(std::string pStr) {
+    std::transform(pStr.begin(), pStr.end(), pStr.begin(), ::tolower);
+    if (pStr.find("alta") != std::string::npos || pStr.find("high") != std::string::npos || pStr == "3" || pStr == "p:3" || pStr == "p:alta") {
+        return Priority::High;
+    }
+    if (pStr.find("baixa") != std::string::npos || pStr.find("low") != std::string::npos || pStr == "1" || pStr == "p:1" || pStr == "p:baixa") {
+        return Priority::Low;
+    }
+    return Priority::Medium;
+}
+
 void printHelp() {
     std::cout << Color::BOLD << "=== GERENCIADOR DE TAREFAS (CLI) ===\n\n" << Color::RESET
               << "Uso:\n"
-              << "  task                       Listar apenas tarefas PENDENTES\n"
-              << "  tasks                      Listar TODAS as tarefas\n"
-              << "  task done                  Listar apenas tarefas CONCLUIDAS\n"
-              << "  task add \"Minha tarefa\"   Adicionar uma nova tarefa\n"
-              << "  task x <ID>                Marcar tarefa como concluida\n"
-              << "  task rm <ID>               Remover permanentemente uma tarefa\n"
-              << "  task --help                Exibir este menu de ajuda\n";
+              << "  task                               Listar apenas tarefas PENDENTES\n"
+              << "  tasks                              Listar TODAS as tarefas\n"
+              << "  task done                          Listar apenas tarefas CONCLUIDAS\n"
+              << "  task add \"Minha tarefa\"           Adicionar tarefa (Prioridade Media padrao)\n"
+              << "  task add \"Minha tarefa\" p:alta     Adicionar com prioridade ALTA, MEDIA ou BAIXA\n"
+              << "  task x <ID>                        Marcar tarefa como concluida\n"
+              << "  task rm <ID>                       Remover permanentemente uma tarefa\n"
+              << "  task --help                        Exibir este menu de ajuda\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -47,14 +61,12 @@ int main(int argc, char* argv[]) {
 
     std::string progName = argv[0];
     
-    // Suporte ao comando 'tasks' para listar tudo diretamente
     if (progName.find("tasks") != std::string::npos && argc < 2) {
         std::cout << Color::BOLD << "--- TODAS AS TAREFAS ---\n" << Color::RESET;
         manager.listAllTasks();
         return 0;
     }
 
-    // Executável chamado como 'task' sem argumentos: Pendentes
     if (argc < 2) {
         std::cout << Color::BOLD << "--- TAREFAS PENDENTES ---\n" << Color::RESET;
         manager.listTasksByStatus(false);
@@ -71,15 +83,27 @@ int main(int argc, char* argv[]) {
         manager.listTasksByStatus(true);
     }
     else if (command == "add" && argc >= 3) {
-        std::string title = argv[2];
-        for (int i = 3; i < argc; ++i) {
-            title += " ";
-            title += argv[i];
+        Priority priority = Priority::Medium;
+        std::string title = "";
+
+        // Verifica se o último argumento é uma flag de prioridade (ex: p:alta, p:baixa, alta)
+        std::string lastArg = argv[argc - 1];
+        if (lastArg.rfind("p:", 0) == 0 || lastArg == "alta" || lastArg == "media" || lastArg == "baixa" || lastArg == "high" || lastArg == "low") {
+            priority = parsePriority(lastArg);
+            for (int i = 2; i < argc - 1; ++i) {
+                if (i > 2) title += " ";
+                title += argv[i];
+            }
+        } else {
+            for (int i = 2; i < argc; ++i) {
+                if (i > 2) title += " ";
+                title += argv[i];
+            }
         }
 
-        manager.addTask(title);
+        manager.addTask(title, priority);
         storage.save(manager);
-        std::cout << Color::GREEN << "✔ Tarefa adicionada: \"" << title << "\"\n" << Color::RESET;
+        std::cout << Color::GREEN << "✔ Tarefa adicionada com sucesso!\n" << Color::RESET;
     }
     else if (command == "x" && argc >= 3) {
         try {

@@ -16,12 +16,12 @@ public:
         return tasks;
     }
 
-    void addTask(const std::string& title) {
-        tasks.emplace_back(nextId++, title);
+    void addTask(const std::string& title, Priority priority = Priority::Medium) {
+        tasks.emplace_back(nextId++, title, priority);
     }
 
-    void loadTask(int id, const std::string& title, bool completed) {
-        tasks.emplace_back(id, title);
+    void loadTask(int id, const std::string& title, bool completed, Priority priority) {
+        tasks.emplace_back(id, title, priority);
         if (completed) {
             tasks.back().markAsCompleted();
         }

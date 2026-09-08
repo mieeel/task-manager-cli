@@ -7,33 +7,58 @@
 #include "Colors.hpp"
 
 enum class TaskStatus { Pending, Completed };
+enum class Priority { Low = 1, Medium = 2, High = 3 };
 
 class Task {
 private:
     int id;
     std::string title;
     TaskStatus status;
+    Priority priority;
 
 public:
-    Task(int id, const std::string& title) 
-        : id(id), title(title), status(TaskStatus::Pending) {}
+    Task(int id, const std::string& title, Priority priority = Priority::Medium) 
+        : id(id), title(title), status(TaskStatus::Pending), priority(priority) {}
 
     int getId() const { return id; }
     std::string getTitle() const { return title; }
     bool isCompleted() const { return status == TaskStatus::Completed; }
+    Priority getPriority() const { return priority; }
 
     void markAsCompleted() { 
         status = TaskStatus::Completed; 
+    }
+
+    std::string getPriorityString() const {
+        switch (priority) {
+            case Priority::High:   return "ALTA";
+            case Priority::Medium: return "MED ";
+            case Priority::Low:    return "BAIXA";
+        }
+        return "MED ";
+    }
+
+    std::string getColoredPriority() const {
+        switch (priority) {
+            case Priority::High:   
+                return Color::BOLD + Color::RED + "[ALTA]" + Color::RESET;
+            case Priority::Medium: 
+                return Color::YELLOW + "[MÉD ]" + Color::RESET;
+            case Priority::Low:    
+                return Color::BLUE + "[BAIXA]" + Color::RESET;
+        }
+        return Color::YELLOW + "[MÉD ]" + Color::RESET;
     }
 
     void print() const {
         if (isCompleted()) {
             std::cout << Color::GREEN << "[X] " << Color::RESET
                       << Color::GRAY << std::setw(3) << std::setfill('0') << id << ". "
-                      << title << Color::RESET << "\n";
+                      << "[DONE] " << title << Color::RESET << "\n";
         } else {
             std::cout << Color::YELLOW << "[ ] " << Color::RESET
                       << Color::BOLD << std::setw(3) << std::setfill('0') << id << ". " << Color::RESET
+                      << getColoredPriority() << " "
                       << Color::CYAN << title << Color::RESET << "\n";
         }
     }
