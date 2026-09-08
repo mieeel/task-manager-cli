@@ -1,24 +1,37 @@
+#ifndef TASK_HPP
+#define TASK_HPP
+
+#include <string>
 #include <iostream>
-#include <string.h>
 
-enum class TaskStatus {Pendente, Completa};
+enum class TaskStatus { Pending, Completed };
 
-class Task{
-    private:
+class Task {
+private:
     int id;
     std::string title;
     TaskStatus status;
 
-    public:
-    Task(int id, const std::string& title): id(id), title(title), status(TaskStatus::Pendente){}
+public:
+    // Construtor principal (cria novas tarefas pendentes por padrão)
+    Task(int id, const std::string& title) 
+        : id(id), title(title), status(TaskStatus::Pending) {}
 
-    int getID() const {return id; }
-    std::string getTitle() const {return title; }
-    bool isCompleted() const {return status == TaskStatus::Completa; }
+    // Getters
+    int getId() const { return id; }
+    std::string getTitle() const { return title; }
+    bool isCompleted() const { return status == TaskStatus::Completed; }
 
-    void markAsCompleted() { status = TaskStatus::Completa; }
+    // Métodos para alterar estado
+    void markAsCompleted() { 
+        status = TaskStatus::Completed; 
+    }
 
+    // Exibição formatada no terminal
     void print() const {
-        std::cout << "[" << (isCompleted() ? "X": " ") << "] " << id << ". " << title << "\n";
+        std::cout << "[" << (isCompleted() ? "X" : " ") << "] "
+                  << id << ". " << title << "\n";
     }
 };
+
+#endif
