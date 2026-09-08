@@ -15,7 +15,7 @@ public:
     explicit StorageManager(const std::string& filename) : filename(filename) {}
 
     void save(const TaskManager& manager) const {
-        std::ofstream file(filename, std::ios::trunc); // Sobrescreve o arquivo com a lista atual
+        std::ofstream file(filename, std::ios::trunc);
         if (!file.is_open()) return;
 
         for (const auto& task : manager.getTasks()) {
@@ -43,7 +43,6 @@ public:
                 int id = std::stoi(idStr);
                 bool completed = (statusStr == "1");
 
-                // Recria a tarefa mantendo o estado salvo
                 manager.loadTask(id, title, completed);
             }
         }

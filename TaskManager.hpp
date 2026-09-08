@@ -30,7 +30,16 @@ public:
         }
     }
 
-    // Lista apenas as PENDENTES ou apenas as CONCLUÍDAS
+    void listAllTasks() const {
+        if (tasks.empty()) {
+            std::cout << "Nenhuma tarefa cadastrada.\n";
+            return;
+        }
+        for (const auto& task : tasks) {
+            task.print();
+        }
+    }
+
     void listTasksByStatus(bool showCompleted) const {
         bool foundAny = false;
         for (const auto& task : tasks) {
@@ -56,6 +65,18 @@ public:
 
         if (it != tasks.end()) {
             it->markAsCompleted();
+            return true;
+        }
+        return false;
+    }
+
+    bool deleteTask(int id) {
+        auto it = std::find_if(tasks.begin(), tasks.end(), [id](const Task& t) {
+            return t.getId() == id;
+        });
+
+        if (it != tasks.end()) {
+            tasks.erase(it);
             return true;
         }
         return false;
