@@ -2,6 +2,11 @@
 
 A lightweight, high-performance command-line Task Manager built in Modern C++ (C++17). Designed for speed, persistent local storage, custom color outputs, and priority handling.
 
+<p align="left">
+  <img src="https://img.shields.io/badge/C%2B%2B-17-blue.svg" alt="C++ Version" />
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License" />
+</p>
+
 ---
 
 ## ✨ Features
