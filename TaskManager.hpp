@@ -41,11 +41,34 @@ public:
         }
     }
 
+    void printProgressBar() const {
+        if (tasks.empty()) return;
+
+        int total = tasks.size();
+        int completed = 0;
+        for (const auto& task : tasks) {
+            if (task.isCompleted()) completed++;
+        }
+
+        int percentage = (completed * 100) / total;
+        int barWidth = 15;
+        int filledWidth = (completed * barWidth) / total;
+
+        std::cout << Color::GRAY << "Progress: [" << Color::RESET;
+        for (int i = 0; i < barWidth; ++i) {
+            if (i < filledWidth) std::cout << Color::GREEN << "█" << Color::RESET;
+            else std::cout << Color::GRAY << "░" << Color::RESET;
+        }
+        std::cout << Color::GRAY << "] " << percentage << "% (" 
+                  << completed << "/" << total << " completed)\n\n" << Color::RESET;
+    }
+
     void listAllTasks() const {
         if (tasks.empty()) {
             std::cout << Color::GRAY << "No tasks found.\n" << Color::RESET;
             return;
         }
+        printProgressBar();
         auto sortedTasks = getSortedTasks();
         for (const auto& task : sortedTasks) {
             task.print();
@@ -55,6 +78,8 @@ public:
     void listTasksByStatus(bool showCompleted) const {
         bool foundAny = false;
         auto sortedTasks = getSortedTasks();
+
+        printProgressBar();
 
         for (const auto& task : sortedTasks) {
             if (task.isCompleted() == showCompleted) {
@@ -69,6 +94,28 @@ public:
             } else {
                 std::cout << Color::GREEN << "No pending tasks! All caught up! 🎉\n" << Color::RESET;
             }
+        }
+    }
+
+    void searchTasks(const std::string& query) const {
+        std::string lowerQuery = query;
+        std::transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
+
+        bool found = false;
+        auto sortedTasks = getSortedTasks();
+
+        for (const auto& task : sortedTasks) {
+            std::string title = task.getTitle();
+            std::transform(title.begin(), title.end(), title.begin(), ::tolower);
+
+            if (title.find(lowerQuery) != std::string::npos) {
+                task.print();
+                found = true;
+            }
+        }
+
+        if (!found) {
+            std::cout << Color::YELLOW << "No tasks matching \"" << query << "\".\n" << Color::RESET;
         }
     }
 

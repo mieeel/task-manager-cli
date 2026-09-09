@@ -37,10 +37,11 @@ void printHelp() {
               << "  task [list|ls]             List pending tasks (Default)\n"
               << "  task list --all (-a)       List ALL tasks\n"
               << "  task list --done           List COMPLETED tasks\n"
+              << "  task search <keyword>      Search tasks by title keyword\n"
               << "  task add \"Task title\"     Add a new task (Medium priority by default)\n"
               << "  task add \"Task title\" p:high Add a task with HIGH, MED, or LOW priority\n"
-              << "  task done <ID>             Mark task as completed (alias: task x <ID>)\n"
-              << "  task rm <ID>               Remove a task permanently (alias: task del <ID>)\n"
+              << "  task done <ID>             Mark task as completed\n"
+              << "  task rm <ID>               Remove a task permanently\n"
               << "  task clear                 Remove all completed tasks\n"
               << "  task --help (-h)           Show this help menu\n";
 }
@@ -59,7 +60,6 @@ int main(int argc, char* argv[]) {
     StorageManager storage(filepath);
     storage.load(manager);
 
-    // Default command (no arguments provided)
     if (argc < 2) {
         std::cout << Color::BOLD << "--- PENDING TASKS ---\n" << Color::RESET;
         manager.listTasksByStatus(false);
@@ -87,6 +87,15 @@ int main(int argc, char* argv[]) {
             std::cout << Color::BOLD << "--- PENDING TASKS ---\n" << Color::RESET;
             manager.listTasksByStatus(false);
         }
+    }
+    else if (command == "search" && argc >= 3) {
+        std::string query = argv[2];
+        for (int i = 3; i < argc; ++i) {
+            query += " ";
+            query += argv[i];
+        }
+        std::cout << Color::BOLD << "--- SEARCH RESULTS FOR \"" << query << "\" ---\n" << Color::RESET;
+        manager.searchTasks(query);
     }
     else if (command == "add" && argc >= 3) {
         Priority priority = Priority::Medium;
