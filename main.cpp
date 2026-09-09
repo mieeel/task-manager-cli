@@ -37,9 +37,11 @@ void printHelp() {
               << "  task [list|ls]             List pending tasks (Default)\n"
               << "  task list --all (-a)       List ALL tasks\n"
               << "  task list --done           List COMPLETED tasks\n"
+              << "  task list --prio <h|m|l>   List tasks filtered by priority\n"
               << "  task search <keyword>      Search tasks by title keyword\n"
               << "  task add \"Task title\"     Add a new task (Medium priority by default)\n"
               << "  task add \"Task title\" p:high Add a task with HIGH, MED, or LOW priority\n"
+              << "  task edit <ID> \"Title\"    Edit title and/or priority (e.g. task edit 1 \"New\" p:high)\n"
               << "  task done <ID>             Mark task as completed\n"
               << "  task rm <ID>               Remove a task permanently\n"
               << "  task clear                 Remove all completed tasks\n"
@@ -80,6 +82,10 @@ int main(int argc, char* argv[]) {
             } else if (subflag == "--done") {
                 std::cout << Color::BOLD << "--- COMPLETED TASKS ---\n" << Color::RESET;
                 manager.listTasksByStatus(true);
+            } else if ((subflag == "--prio" || subflag == "-p") && argc >= 4) {
+                Priority priority = parsePriority(argv[3]);
+                std::cout << Color::BOLD << "--- TASKS BY PRIORITY ---\n" << Color::RESET;
+                manager.listTasksByPriority(priority);
             } else {
                 std::cout << Color::YELLOW << "Unknown flag. Use 'task --help' for details.\n" << Color::RESET;
             }
@@ -118,6 +124,41 @@ int main(int argc, char* argv[]) {
         manager.addTask(title, priority);
         storage.save(manager);
         std::cout << Color::GREEN << "✔ Task added successfully!\n" << Color::RESET;
+    }
+    else if (command == "edit" && argc >= 4) {
+        try {
+            int id = std::stoi(argv[2]);
+            Priority priority = Priority::Medium;
+            std::string title = "";
+            bool updatePriority = false;
+            bool updateTitle = false;
+
+            std::string lastArg = argv[argc - 1];
+            if (lastArg.rfind("p:", 0) == 0 || lastArg == "high" || lastArg == "med" || lastArg == "low") {
+                priority = parsePriority(lastArg);
+                updatePriority = true;
+                for (int i = 3; i < argc - 1; ++i) {
+                    if (i > 3) title += " ";
+                    title += argv[i];
+                }
+            } else {
+                for (int i = 3; i < argc; ++i) {
+                    if (i > 3) title += " ";
+                    title += argv[i];
+                }
+            }
+
+            if (!title.empty()) updateTitle = true;
+
+            if (manager.editTask(id, title, priority, updateTitle, updatePriority)) {
+                storage.save(manager);
+                std::cout << Color::GREEN << "✔ Task #" << std::setw(3) << std::setfill('0') << id << " updated successfully!\n" << Color::RESET;
+            } else {
+                std::cout << Color::RED << "❌ Task #" << std::setw(3) << std::setfill('0') << id << " not found.\n" << Color::RESET;
+            }
+        } catch (...) {
+            std::cout << Color::RED << "❌ Invalid ID provided.\n" << Color::RESET;
+        }
     }
     else if ((command == "done" || command == "x") && argc >= 3) {
         try {

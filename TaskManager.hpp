@@ -97,6 +97,22 @@ public:
         }
     }
 
+    void listTasksByPriority(Priority priority) const {
+        bool foundAny = false;
+        auto sortedTasks = getSortedTasks();
+
+        for (const auto& task : sortedTasks) {
+            if (task.getPriority() == priority && !task.isCompleted()) {
+                task.print();
+                foundAny = true;
+            }
+        }
+
+        if (!foundAny) {
+            std::cout << Color::GRAY << "No pending tasks found with this priority.\n" << Color::RESET;
+        }
+    }
+
     void searchTasks(const std::string& query) const {
         std::string lowerQuery = query;
         std::transform(lowerQuery.begin(), lowerQuery.end(), lowerQuery.begin(), ::tolower);
@@ -117,6 +133,19 @@ public:
         if (!found) {
             std::cout << Color::YELLOW << "No tasks matching \"" << query << "\".\n" << Color::RESET;
         }
+    }
+
+    bool editTask(int id, const std::string& newTitle, Priority newPriority, bool updateTitle, bool updatePriority) {
+        auto it = std::find_if(tasks.begin(), tasks.end(), [id](const Task& t) {
+            return t.getId() == id;
+        });
+
+        if (it != tasks.end()) {
+            if (updateTitle) it->setTitle(newTitle);
+            if (updatePriority) it->setPriority(newPriority);
+            return true;
+        }
+        return false;
     }
 
     bool markTaskCompleted(int id) {

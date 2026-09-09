@@ -25,6 +25,9 @@ public:
     bool isCompleted() const { return status == TaskStatus::Completed; }
     Priority getPriority() const { return priority; }
 
+    void setTitle(const std::string& newTitle) { title = newTitle; }
+    void setPriority(Priority newPriority) { priority = newPriority; }
+
     void markAsCompleted() { 
         status = TaskStatus::Completed; 
     }
