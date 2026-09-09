@@ -51,6 +51,7 @@ sudo mv task /usr/local/bin/
 | `task` / `task ls` | List all **pending** tasks (Sorted by Priority) |
 | `task ls --all` | List **all** tasks (Pending + Completed) |
 | `task ls --done` | List **completed** tasks |
+| `task search <keyword>` | Search tasks by title keyword |
 | `task add "Title"` | Add a task with default **Medium** priority |
 | `task add "Title" p:high` | Add a task with **High**, **Med**, or **Low** priority |
 | `task done <ID>` | Mark a task as completed (e.g., `task done 1` or `task done 001`) |
