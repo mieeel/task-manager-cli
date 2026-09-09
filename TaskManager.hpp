@@ -27,12 +27,12 @@ public:
         return tasks;
     }
 
-    void addTask(const std::string& title, Priority priority = Priority::Medium) {
-        tasks.emplace_back(nextId++, title, priority);
+    void addTask(const std::string& title, Priority priority = Priority::Medium, int parentId = 0, const std::vector<std::string>& tags = {}) {
+        tasks.emplace_back(nextId++, title, priority, parentId, tags);
     }
 
-    void loadTask(int id, const std::string& title, bool completed, Priority priority) {
-        tasks.emplace_back(id, title, priority);
+    void loadTask(int id, const std::string& title, bool completed, Priority priority, int parentId = 0, const std::vector<std::string>& tags = {}) {
+        tasks.emplace_back(id, title, priority, parentId, tags);
         if (completed) {
             tasks.back().markAsCompleted();
         }
@@ -69,48 +69,88 @@ public:
             return;
         }
         printProgressBar();
-        auto sortedTasks = getSortedTasks();
-        for (const auto& task : sortedTasks) {
-            task.print();
-        }
+        printTaskTree(false, false, Priority::Low, "");
     }
 
     void listTasksByStatus(bool showCompleted) const {
-        bool foundAny = false;
-        auto sortedTasks = getSortedTasks();
-
+        if (tasks.empty()) {
+            std::cout << Color::GREEN << "No tasks found! All caught up! 🎉\n" << Color::RESET;
+            return;
+        }
         printProgressBar();
-
-        for (const auto& task : sortedTasks) {
-            if (task.isCompleted() == showCompleted) {
-                task.print();
-                foundAny = true;
-            }
-        }
-
-        if (!foundAny) {
-            if (showCompleted) {
-                std::cout << Color::GRAY << "No completed tasks yet.\n" << Color::RESET;
-            } else {
-                std::cout << Color::GREEN << "No pending tasks! All caught up! 🎉\n" << Color::RESET;
-            }
-        }
+        printTaskTree(true, showCompleted, Priority::Low, "");
     }
 
     void listTasksByPriority(Priority priority) const {
-        bool foundAny = false;
-        auto sortedTasks = getSortedTasks();
+        printTaskTree(false, false, priority, "", true);
+    }
 
-        for (const auto& task : sortedTasks) {
-            if (task.getPriority() == priority && !task.isCompleted()) {
-                task.print();
-                foundAny = true;
+    void listTasksByTag(const std::string& tag) const {
+        printTaskTree(false, false, Priority::Low, tag, false, true);
+    }
+
+    void printTaskTree(bool filterStatus, bool statusValue, Priority priorityFilter = Priority::Low, const std::string& tagFilter = "", bool usePriority = false, bool useTag = false) const {
+        auto sorted = getSortedTasks();
+        bool found = false;
+
+        // Imprime primeiro as tarefas principais
+        for (const auto& task : sorted) {
+            if (task.getParentId() != 0) continue; // Pula subtarefas na raiz
+
+            bool matchStatus = !filterStatus || (task.isCompleted() == statusValue);
+            bool matchPriority = !usePriority || (task.getPriority() == priorityFilter);
+            bool matchTag = !useTag || task.hasTag(tagFilter);
+
+            if (matchStatus && matchPriority && matchTag) {
+                task.print(false);
+                found = true;
+
+                // Imprime as subtarefas vinculadas
+                for (const auto& sub : sorted) {
+                    if (sub.getParentId() == task.getId()) {
+                        sub.print(true);
+                    }
+                }
             }
         }
 
-        if (!foundAny) {
-            std::cout << Color::GRAY << "No pending tasks found with this priority.\n" << Color::RESET;
+        if (!found) {
+            std::cout << Color::GRAY << "No matching tasks found.\n" << Color::RESET;
         }
+    }
+
+    void printStats() const {
+        if (tasks.empty()) {
+            std::cout << Color::GRAY << "No tasks available to generate statistics.\n" << Color::RESET;
+            return;
+        }
+
+        int total = tasks.size();
+        int completed = 0;
+        int pending = 0;
+        int highPrio = 0;
+        int medPrio = 0;
+        int lowPrio = 0;
+
+        for (const auto& t : tasks) {
+            if (t.isCompleted()) completed++;
+            else pending++;
+
+            if (t.getPriority() == Priority::High) highPrio++;
+            else if (t.getPriority() == Priority::Medium) medPrio++;
+            else if (t.getPriority() == Priority::Low) lowPrio++;
+        }
+
+        int rate = (completed * 100) / total;
+
+        std::cout << Color::BOLD << "=== TASK STATISTICS ===\n\n" << Color::RESET
+                  << " Total Tasks:      " << Color::CYAN << total << Color::RESET << "\n"
+                  << " Completed:        " << Color::GREEN << completed << Color::RESET << " (" << rate << "%)\n"
+                  << " Pending:          " << Color::YELLOW << pending << Color::RESET << "\n\n"
+                  << Color::BOLD << "Priority Breakdown (Pending):\n" << Color::RESET
+                  << "  High:            " << Color::RED << highPrio << Color::RESET << "\n"
+                  << "  Medium:          " << Color::YELLOW << medPrio << Color::RESET << "\n"
+                  << "  Low:             " << Color::BLUE << lowPrio << Color::RESET << "\n";
     }
 
     void searchTasks(const std::string& query) const {
@@ -125,7 +165,7 @@ public:
             std::transform(title.begin(), title.end(), title.begin(), ::tolower);
 
             if (title.find(lowerQuery) != std::string::npos) {
-                task.print();
+                task.print(task.getParentId() != 0);
                 found = true;
             }
         }
@@ -135,7 +175,7 @@ public:
         }
     }
 
-    bool editTask(int id, const std::string& newTitle, Priority newPriority, bool updateTitle, bool updatePriority) {
+    bool editTask(int id, const std::string& newTitle, Priority newPriority, const std::vector<std::string>& newTags, bool updateTitle, bool updatePriority, bool updateTags) {
         auto it = std::find_if(tasks.begin(), tasks.end(), [id](const Task& t) {
             return t.getId() == id;
         });
@@ -143,6 +183,7 @@ public:
         if (it != tasks.end()) {
             if (updateTitle) it->setTitle(newTitle);
             if (updatePriority) it->setPriority(newPriority);
+            if (updateTags) it->setTags(newTags);
             return true;
         }
         return false;

@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <algorithm>
+#include <vector>
 #include "TaskManager.hpp"
 #include "StorageManager.hpp"
 #include "Colors.hpp"
@@ -38,12 +39,14 @@ void printHelp() {
               << "  task list --all (-a)       List ALL tasks\n"
               << "  task list --done           List COMPLETED tasks\n"
               << "  task list --prio <h|m|l>   List tasks filtered by priority\n"
+              << "  task list @tag             List tasks filtered by tag\n"
               << "  task search <keyword>      Search tasks by title keyword\n"
-              << "  task add \"Task title\"     Add a new task (Medium priority by default)\n"
-              << "  task add \"Task title\" p:high Add a task with HIGH, MED, or LOW priority\n"
-              << "  task edit <ID> \"Title\"    Edit title and/or priority (e.g. task edit 1 \"New\" p:high)\n"
-              << "  task done <ID>             Mark task as completed\n"
-              << "  task rm <ID>               Remove a task permanently\n"
+              << "  task stats                 View task completion statistics\n"
+              << "  task add \"Title\" @tag      Add a task with tags and priority (p:high)\n"
+              << "  task add \"Subtask\" sub:<ID> Add a subtask linked to a parent ID\n"
+              << "  task edit <ID> \"Title\"    Edit task title, priority, or tags\n"
+              << "  task done <ID1> <ID2> ...  Mark one or multiple tasks as completed\n"
+              << "  task rm <ID1> <ID2> ...    Remove one or multiple tasks permanently\n"
               << "  task clear                 Remove all completed tasks\n"
               << "  task --help (-h)           Show this help menu\n";
 }
@@ -73,6 +76,9 @@ int main(int argc, char* argv[]) {
     if (command == "--help" || command == "-h" || command == "help") {
         printHelp();
     }
+    else if (command == "stats") {
+        manager.printStats();
+    }
     else if (command == "list" || command == "ls") {
         if (argc >= 3) {
             std::string subflag = argv[2];
@@ -86,6 +92,10 @@ int main(int argc, char* argv[]) {
                 Priority priority = parsePriority(argv[3]);
                 std::cout << Color::BOLD << "--- TASKS BY PRIORITY ---\n" << Color::RESET;
                 manager.listTasksByPriority(priority);
+            } else if (subflag.rfind("@", 0) == 0) {
+                std::string tag = subflag.substr(1);
+                std::cout << Color::BOLD << "--- TASKS WITH TAG #" << tag << " ---\n" << Color::RESET;
+                manager.listTasksByTag(tag);
             } else {
                 std::cout << Color::YELLOW << "Unknown flag. Use 'task --help' for details.\n" << Color::RESET;
             }
@@ -105,23 +115,25 @@ int main(int argc, char* argv[]) {
     }
     else if (command == "add" && argc >= 3) {
         Priority priority = Priority::Medium;
+        int parentId = 0;
+        std::vector<std::string> tags;
         std::string title = "";
 
-        std::string lastArg = argv[argc - 1];
-        if (lastArg.rfind("p:", 0) == 0 || lastArg == "high" || lastArg == "med" || lastArg == "low") {
-            priority = parsePriority(lastArg);
-            for (int i = 2; i < argc - 1; ++i) {
-                if (i > 2) title += " ";
-                title += argv[i];
-            }
-        } else {
-            for (int i = 2; i < argc; ++i) {
-                if (i > 2) title += " ";
-                title += argv[i];
+        for (int i = 2; i < argc; ++i) {
+            std::string arg = argv[i];
+            if (arg.rfind("p:", 0) == 0 || arg == "high" || arg == "med" || arg == "low") {
+                priority = parsePriority(arg);
+            } else if (arg.rfind("sub:", 0) == 0) {
+                try { parentId = std::stoi(arg.substr(4)); } catch(...) {}
+            } else if (arg.rfind("@", 0) == 0) {
+                tags.push_back(arg.substr(1));
+            } else {
+                if (!title.empty()) title += " ";
+                title += arg;
             }
         }
 
-        manager.addTask(title, priority);
+        manager.addTask(title, priority, parentId, tags);
         storage.save(manager);
         std::cout << Color::GREEN << "✔ Task added successfully!\n" << Color::RESET;
     }
@@ -129,28 +141,29 @@ int main(int argc, char* argv[]) {
         try {
             int id = std::stoi(argv[2]);
             Priority priority = Priority::Medium;
+            std::vector<std::string> tags;
             std::string title = "";
             bool updatePriority = false;
             bool updateTitle = false;
+            bool updateTags = false;
 
-            std::string lastArg = argv[argc - 1];
-            if (lastArg.rfind("p:", 0) == 0 || lastArg == "high" || lastArg == "med" || lastArg == "low") {
-                priority = parsePriority(lastArg);
-                updatePriority = true;
-                for (int i = 3; i < argc - 1; ++i) {
-                    if (i > 3) title += " ";
-                    title += argv[i];
-                }
-            } else {
-                for (int i = 3; i < argc; ++i) {
-                    if (i > 3) title += " ";
-                    title += argv[i];
+            for (int i = 3; i < argc; ++i) {
+                std::string arg = argv[i];
+                if (arg.rfind("p:", 0) == 0) {
+                    priority = parsePriority(arg);
+                    updatePriority = true;
+                } else if (arg.rfind("@", 0) == 0) {
+                    tags.push_back(arg.substr(1));
+                    updateTags = true;
+                } else {
+                    if (!title.empty()) title += " ";
+                    title += arg;
                 }
             }
 
             if (!title.empty()) updateTitle = true;
 
-            if (manager.editTask(id, title, priority, updateTitle, updatePriority)) {
+            if (manager.editTask(id, title, priority, tags, updateTitle, updatePriority, updateTags)) {
                 storage.save(manager);
                 std::cout << Color::GREEN << "✔ Task #" << std::setw(3) << std::setfill('0') << id << " updated successfully!\n" << Color::RESET;
             } else {
@@ -160,31 +173,43 @@ int main(int argc, char* argv[]) {
             std::cout << Color::RED << "❌ Invalid ID provided.\n" << Color::RESET;
         }
     }
-    else if ((command == "done" || command == "x") && argc >= 3) {
-        try {
-            int id = std::stoi(argv[2]);
-            if (manager.markTaskCompleted(id)) {
-                storage.save(manager);
-                std::cout << Color::GREEN << "✔ Task #" << std::setw(3) << std::setfill('0') << id << " marked as completed!\n" << Color::RESET;
-            } else {
-                std::cout << Color::RED << "❌ Task #" << std::setw(3) << std::setfill('0') << id << " not found.\n" << Color::RESET;
-            }
-        } catch (...) {
-            std::cout << Color::RED << "❌ Invalid ID provided.\n" << Color::RESET;
+    else if (command == "done" || command == "x") {
+        if (argc < 3) {
+            std::cout << Color::RED << "❌ Please provide at least one task ID.\n" << Color::RESET;
+            return 1;
         }
+        for (int i = 2; i < argc; ++i) {
+            try {
+                int id = std::stoi(argv[i]);
+                if (manager.markTaskCompleted(id)) {
+                    std::cout << Color::GREEN << "✔ Task #" << std::setw(3) << std::setfill('0') << id << " completed!\n" << Color::RESET;
+                } else {
+                    std::cout << Color::RED << "❌ Task #" << std::setw(3) << std::setfill('0') << id << " not found.\n" << Color::RESET;
+                }
+            } catch (...) {
+                std::cout << Color::RED << "❌ Invalid ID: " << argv[i] << "\n" << Color::RESET;
+            }
+        }
+        storage.save(manager);
     } 
-    else if ((command == "rm" || command == "del") && argc >= 3) {
-        try {
-            int id = std::stoi(argv[2]);
-            if (manager.deleteTask(id)) {
-                storage.save(manager);
-                std::cout << Color::RED << "🗑️ Task #" << std::setw(3) << std::setfill('0') << id << " removed successfully!\n" << Color::RESET;
-            } else {
-                std::cout << Color::RED << "❌ Task #" << std::setw(3) << std::setfill('0') << id << " not found.\n" << Color::RESET;
-            }
-        } catch (...) {
-            std::cout << Color::RED << "❌ Invalid ID provided.\n" << Color::RESET;
+    else if (command == "rm" || command == "del") {
+        if (argc < 3) {
+            std::cout << Color::RED << "❌ Please provide at least one task ID.\n" << Color::RESET;
+            return 1;
         }
+        for (int i = 2; i < argc; ++i) {
+            try {
+                int id = std::stoi(argv[i]);
+                if (manager.deleteTask(id)) {
+                    std::cout << Color::RED << "🗑️ Task #" << std::setw(3) << std::setfill('0') << id << " removed!\n" << Color::RESET;
+                } else {
+                    std::cout << Color::RED << "❌ Task #" << std::setw(3) << std::setfill('0') << id << " not found.\n" << Color::RESET;
+                }
+            } catch (...) {
+                std::cout << Color::RED << "❌ Invalid ID: " << argv[i] << "\n" << Color::RESET;
+            }
+        }
+        storage.save(manager);
     }
     else if (command == "clear") {
         int removedCount = manager.clearCompletedTasks();
