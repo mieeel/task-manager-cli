@@ -14,6 +14,11 @@ private:
     std::vector<Task> getSortedTasks() const {
         std::vector<Task> sorted = tasks;
         std::sort(sorted.begin(), sorted.end(), [](const Task& a, const Task& b) {
+            // Se ambos tem data, ordena por data
+            if (a.hasDueDate() && b.hasDueDate()) {
+                if (a.getDueDate() != b.getDueDate()) return a.getDueDate() < b.getDueDate();
+            }
+            // Senal, prioriza tarefas por prioridade
             if (a.getPriority() != b.getPriority()) {
                 return static_cast<int>(a.getPriority()) > static_cast<int>(b.getPriority());
             }
@@ -27,12 +32,12 @@ public:
         return tasks;
     }
 
-    void addTask(const std::string& title, Priority priority = Priority::Medium, int parentId = 0, const std::vector<std::string>& tags = {}) {
-        tasks.emplace_back(nextId++, title, priority, parentId, tags);
+    void addTask(const std::string& title, Priority priority = Priority::Medium, int parentId = 0, const std::vector<std::string>& tags = {}, const std::string& dueDate = "") {
+        tasks.emplace_back(nextId++, title, priority, parentId, tags, dueDate);
     }
 
-    void loadTask(int id, const std::string& title, bool completed, Priority priority, int parentId = 0, const std::vector<std::string>& tags = {}) {
-        tasks.emplace_back(id, title, priority, parentId, tags);
+    void loadTask(int id, const std::string& title, bool completed, Priority priority, int parentId = 0, const std::vector<std::string>& tags = {}, const std::string& dueDate = "") {
+        tasks.emplace_back(id, title, priority, parentId, tags, dueDate);
         if (completed) {
             tasks.back().markAsCompleted();
         }
@@ -81,6 +86,24 @@ public:
         printTaskTree(true, showCompleted, Priority::Low, "");
     }
 
+    void listEventsOnly() const {
+        auto sorted = getSortedTasks();
+        bool found = false;
+
+        std::cout << Color::BOLD << "--- SCHEDULED EVENTS & DEADLINES ---\n\n" << Color::RESET;
+
+        for (const auto& task : sorted) {
+            if (task.hasDueDate() && !task.isCompleted()) {
+                task.print(false);
+                found = true;
+            }
+        }
+
+        if (!found) {
+            std::cout << Color::GRAY << "No upcoming events or scheduled tasks found.\n" << Color::RESET;
+        }
+    }
+
     void listTasksByPriority(Priority priority) const {
         printTaskTree(false, false, priority, "", true);
     }
@@ -93,9 +116,8 @@ public:
         auto sorted = getSortedTasks();
         bool found = false;
 
-        // Imprime primeiro as tarefas principais
         for (const auto& task : sorted) {
-            if (task.getParentId() != 0) continue; // Pula subtarefas na raiz
+            if (task.getParentId() != 0) continue;
 
             bool matchStatus = !filterStatus || (task.isCompleted() == statusValue);
             bool matchPriority = !usePriority || (task.getPriority() == priorityFilter);
@@ -105,7 +127,6 @@ public:
                 task.print(false);
                 found = true;
 
-                // Imprime as subtarefas vinculadas
                 for (const auto& sub : sorted) {
                     if (sub.getParentId() == task.getId()) {
                         sub.print(true);
@@ -128,17 +149,13 @@ public:
         int total = tasks.size();
         int completed = 0;
         int pending = 0;
-        int highPrio = 0;
-        int medPrio = 0;
-        int lowPrio = 0;
+        int eventsCount = 0;
 
         for (const auto& t : tasks) {
             if (t.isCompleted()) completed++;
             else pending++;
 
-            if (t.getPriority() == Priority::High) highPrio++;
-            else if (t.getPriority() == Priority::Medium) medPrio++;
-            else if (t.getPriority() == Priority::Low) lowPrio++;
+            if (t.hasDueDate()) eventsCount++;
         }
 
         int rate = (completed * 100) / total;
@@ -146,11 +163,8 @@ public:
         std::cout << Color::BOLD << "=== TASK STATISTICS ===\n\n" << Color::RESET
                   << " Total Tasks:      " << Color::CYAN << total << Color::RESET << "\n"
                   << " Completed:        " << Color::GREEN << completed << Color::RESET << " (" << rate << "%)\n"
-                  << " Pending:          " << Color::YELLOW << pending << Color::RESET << "\n\n"
-                  << Color::BOLD << "Priority Breakdown (Pending):\n" << Color::RESET
-                  << "  High:            " << Color::RED << highPrio << Color::RESET << "\n"
-                  << "  Medium:          " << Color::YELLOW << medPrio << Color::RESET << "\n"
-                  << "  Low:             " << Color::BLUE << lowPrio << Color::RESET << "\n";
+                  << " Pending:          " << Color::YELLOW << pending << Color::RESET << "\n"
+                  << " Scheduled Events: " << Color::BLUE << eventsCount << Color::RESET << "\n";
     }
 
     void searchTasks(const std::string& query) const {
@@ -175,7 +189,7 @@ public:
         }
     }
 
-    bool editTask(int id, const std::string& newTitle, Priority newPriority, const std::vector<std::string>& newTags, bool updateTitle, bool updatePriority, bool updateTags) {
+    bool editTask(int id, const std::string& newTitle, Priority newPriority, const std::vector<std::string>& newTags, const std::string& newDueDate, bool updateTitle, bool updatePriority, bool updateTags, bool updateDueDate) {
         auto it = std::find_if(tasks.begin(), tasks.end(), [id](const Task& t) {
             return t.getId() == id;
         });
@@ -184,6 +198,7 @@ public:
             if (updateTitle) it->setTitle(newTitle);
             if (updatePriority) it->setPriority(newPriority);
             if (updateTags) it->setTags(newTags);
+            if (updateDueDate) it->setDueDate(newDueDate);
             return true;
         }
         return false;

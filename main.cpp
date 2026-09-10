@@ -38,15 +38,14 @@ void printHelp() {
               << "  task [list|ls]             List pending tasks (Default)\n"
               << "  task list --all (-a)       List ALL tasks\n"
               << "  task list --done           List COMPLETED tasks\n"
-              << "  task list --prio <h|m|l>   List tasks filtered by priority\n"
-              << "  task list @tag             List tasks filtered by tag\n"
+              << "  task events                List ONLY scheduled events and deadlines\n"
               << "  task search <keyword>      Search tasks by title keyword\n"
               << "  task stats                 View task completion statistics\n"
-              << "  task add \"Title\" @tag      Add a task with tags and priority (p:high)\n"
-              << "  task add \"Subtask\" sub:<ID> Add a subtask linked to a parent ID\n"
-              << "  task edit <ID> \"Title\"    Edit task title, priority, or tags\n"
-              << "  task done <ID1> <ID2> ...  Mark one or multiple tasks as completed\n"
-              << "  task rm <ID1> <ID2> ...    Remove one or multiple tasks permanently\n"
+              << "  task add \"Meeting\" due:2026-09-15T14:00 Add a scheduled task/event\n"
+              << "  task add \"Title\" @tag p:high Add a task with tags and priority\n"
+              << "  task edit <ID> due:2026-09-20 Update due date/time for a task\n"
+              << "  task done <ID1> <ID2> ...  Mark task(s) as completed\n"
+              << "  task rm <ID1> <ID2> ...    Remove task(s) permanently\n"
               << "  task clear                 Remove all completed tasks\n"
               << "  task --help (-h)           Show this help menu\n";
 }
@@ -75,6 +74,9 @@ int main(int argc, char* argv[]) {
 
     if (command == "--help" || command == "-h" || command == "help") {
         printHelp();
+    }
+    else if (command == "events" || command == "schedule") {
+        manager.listEventsOnly();
     }
     else if (command == "stats") {
         manager.printStats();
@@ -117,6 +119,7 @@ int main(int argc, char* argv[]) {
         Priority priority = Priority::Medium;
         int parentId = 0;
         std::vector<std::string> tags;
+        std::string dueDate = "";
         std::string title = "";
 
         for (int i = 2; i < argc; ++i) {
@@ -125,6 +128,8 @@ int main(int argc, char* argv[]) {
                 priority = parsePriority(arg);
             } else if (arg.rfind("sub:", 0) == 0) {
                 try { parentId = std::stoi(arg.substr(4)); } catch(...) {}
+            } else if (arg.rfind("due:", 0) == 0) {
+                dueDate = arg.substr(4);
             } else if (arg.rfind("@", 0) == 0) {
                 tags.push_back(arg.substr(1));
             } else {
@@ -133,7 +138,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        manager.addTask(title, priority, parentId, tags);
+        manager.addTask(title, priority, parentId, tags, dueDate);
         storage.save(manager);
         std::cout << Color::GREEN << "✔ Task added successfully!\n" << Color::RESET;
     }
@@ -142,16 +147,21 @@ int main(int argc, char* argv[]) {
             int id = std::stoi(argv[2]);
             Priority priority = Priority::Medium;
             std::vector<std::string> tags;
+            std::string dueDate = "";
             std::string title = "";
             bool updatePriority = false;
             bool updateTitle = false;
             bool updateTags = false;
+            bool updateDueDate = false;
 
             for (int i = 3; i < argc; ++i) {
                 std::string arg = argv[i];
                 if (arg.rfind("p:", 0) == 0) {
                     priority = parsePriority(arg);
                     updatePriority = true;
+                } else if (arg.rfind("due:", 0) == 0) {
+                    dueDate = arg.substr(4);
+                    updateDueDate = true;
                 } else if (arg.rfind("@", 0) == 0) {
                     tags.push_back(arg.substr(1));
                     updateTags = true;
@@ -163,7 +173,7 @@ int main(int argc, char* argv[]) {
 
             if (!title.empty()) updateTitle = true;
 
-            if (manager.editTask(id, title, priority, tags, updateTitle, updatePriority, updateTags)) {
+            if (manager.editTask(id, title, priority, tags, dueDate, updateTitle, updatePriority, updateTags, updateDueDate)) {
                 storage.save(manager);
                 std::cout << Color::GREEN << "✔ Task #" << std::setw(3) << std::setfill('0') << id << " updated successfully!\n" << Color::RESET;
             } else {

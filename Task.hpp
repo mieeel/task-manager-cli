@@ -16,12 +16,13 @@ private:
     std::string title;
     TaskStatus status;
     Priority priority;
-    int parentId; // 0 indica que e uma tarefa principal
+    int parentId;
     std::vector<std::string> tags;
+    std::string dueDate; // Formato: YYYY-MM-DD ou YYYY-MM-DD HH:MM (vazio se nao for evento/prazo)
 
 public:
-    Task(int id, const std::string& title, Priority priority = Priority::Medium, int parentId = 0, const std::vector<std::string>& tags = {}) 
-        : id(id), title(title), status(TaskStatus::Pending), priority(priority), parentId(parentId), tags(tags) {}
+    Task(int id, const std::string& title, Priority priority = Priority::Medium, int parentId = 0, const std::vector<std::string>& tags = {}, const std::string& dueDate = "") 
+        : id(id), title(title), status(TaskStatus::Pending), priority(priority), parentId(parentId), tags(tags), dueDate(dueDate) {}
 
     int getId() const { return id; }
     std::string getTitle() const { return title; }
@@ -29,10 +30,13 @@ public:
     Priority getPriority() const { return priority; }
     int getParentId() const { return parentId; }
     const std::vector<std::string>& getTags() const { return tags; }
+    std::string getDueDate() const { return dueDate; }
+    bool hasDueDate() const { return !dueDate.empty(); }
 
     void setTitle(const std::string& newTitle) { title = newTitle; }
     void setPriority(Priority newPriority) { priority = newPriority; }
     void setTags(const std::vector<std::string>& newTags) { tags = newTags; }
+    void setDueDate(const std::string& newDueDate) { dueDate = newDueDate; }
 
     void markAsCompleted() { 
         status = TaskStatus::Completed; 
@@ -65,16 +69,21 @@ public:
             tagsStr += Color::MAGENTA + " #" + tag + Color::RESET;
         }
 
+        std::string dateStr = "";
+        if (hasDueDate()) {
+            dateStr = Color::BLUE + " 📅 " + dueDate + Color::RESET;
+        }
+
         if (isCompleted()) {
             std::cout << indent << Color::GREEN << "[X] " << Color::RESET
                       << Color::GRAY << std::setw(3) << std::setfill('0') << id << ". "
-                      << "[DONE] " << title << tagsStr << Color::RESET << "\n";
+                      << "[DONE] " << title << tagsStr << dateStr << Color::RESET << "\n";
         } else {
             std::cout << indent << Color::YELLOW << "[ ] " << Color::RESET
                       << Color::BOLD << std::setw(3) << std::setfill('0') << id << ". " << Color::RESET
                       << getColoredPriority() << " "
                       << Color::CYAN << title << Color::RESET
-                      << tagsStr << "\n";
+                      << tagsStr << dateStr << "\n";
         }
     }
 };

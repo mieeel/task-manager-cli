@@ -31,6 +31,7 @@ public:
                  << static_cast<int>(task.getPriority()) << "|"
                  << task.getParentId() << "|"
                  << tagsStr << "|"
+                 << task.getDueDate() << "|"
                  << task.getTitle() << "\n";
         }
     }
@@ -44,7 +45,7 @@ public:
             if (line.empty()) continue;
 
             std::stringstream ss(line);
-            std::string idStr, statusStr, prioStr, parentStr, tagsRaw, title;
+            std::string idStr, statusStr, prioStr, parentStr, tagsRaw, dueDate, title;
 
             if (std::getline(ss, idStr, '|') &&
                 std::getline(ss, statusStr, '|') &&
@@ -56,12 +57,12 @@ public:
                 int parentId = 0;
                 std::vector<std::string> tags;
 
-                // Suporte a formatos legados e novos
                 std::string remainder;
                 if (std::getline(ss, remainder)) {
                     std::stringstream rss(remainder);
                     if (std::getline(rss, parentStr, '|') &&
                         std::getline(rss, tagsRaw, '|') &&
+                        std::getline(rss, dueDate, '|') &&
                         std::getline(rss, title)) {
                         
                         parentId = std::stoi(parentStr);
@@ -71,11 +72,11 @@ public:
                             if (!tag.empty()) tags.push_back(tag);
                         }
                     } else {
-                        title = remainder; // Formato antigo sem parent/tags
+                        title = remainder;
                     }
                 }
 
-                manager.loadTask(id, title, completed, priority, parentId, tags);
+                manager.loadTask(id, title, completed, priority, parentId, tags, dueDate);
             }
         }
     }
