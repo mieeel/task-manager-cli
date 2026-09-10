@@ -35,10 +35,12 @@ A lightweight, high-performance command-line Task Manager built in Modern C++ (C
 
 ### 1. Build with CMake (Recommended)
 
+```bash
 git clone https://github.com/mieeel/task-manager-cli.git
 cd task-manager-cli
 cmake -B build
 cmake --build build
+```
 
 The compiled binary will be available at build/task (Linux/macOS) or build/Debug/task.exe (Windows).
 
