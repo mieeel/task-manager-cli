@@ -18,7 +18,7 @@ private:
     Priority priority;
     int parentId;
     std::vector<std::string> tags;
-    std::string dueDate; // Formato: YYYY-MM-DD ou YYYY-MM-DD HH:MM (vazio se nao for evento/prazo)
+    std::string dueDate; // Formato: YYYY-MM-DD ou YYYY-MM-DD HH:MM
 
 public:
     Task(int id, const std::string& title, Priority priority = Priority::Medium, int parentId = 0, const std::vector<std::string>& tags = {}, const std::string& dueDate = "") 
@@ -31,7 +31,7 @@ public:
     int getParentId() const { return parentId; }
     const std::vector<std::string>& getTags() const { return tags; }
     std::string getDueDate() const { return dueDate; }
-    bool hasDueDate() const { return !dueDate.empty(); }
+    bool hasDueDate() const { return !dueDate.empty() && dueDate != "none"; }
 
     void setTitle(const std::string& newTitle) { title = newTitle; }
     void setPriority(Priority newPriority) { priority = newPriority; }
@@ -69,6 +69,7 @@ public:
             tagsStr += Color::MAGENTA + " #" + tag + Color::RESET;
         }
 
+        // Renderiza o calendário estritamente apenas se houver uma data válida definida
         std::string dateStr = "";
         if (hasDueDate()) {
             dateStr = Color::BLUE + " 📅 " + dueDate + Color::RESET;

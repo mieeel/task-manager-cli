@@ -14,11 +14,15 @@ private:
     std::vector<Task> getSortedTasks() const {
         std::vector<Task> sorted = tasks;
         std::sort(sorted.begin(), sorted.end(), [](const Task& a, const Task& b) {
-            // Se ambos tem data, ordena por data
+            // Se uma tem data e a outra não, a que tem data tem precedência
+            if (a.hasDueDate() != b.hasDueDate()) {
+                return a.hasDueDate();
+            }
+            // Se ambas tem data, ordena por data cronologicamente
             if (a.hasDueDate() && b.hasDueDate()) {
                 if (a.getDueDate() != b.getDueDate()) return a.getDueDate() < b.getDueDate();
             }
-            // Senal, prioriza tarefas por prioridade
+            // Por fim, ordena por nível de prioridade (HIGH > MED > LOW)
             if (a.getPriority() != b.getPriority()) {
                 return static_cast<int>(a.getPriority()) > static_cast<int>(b.getPriority());
             }
