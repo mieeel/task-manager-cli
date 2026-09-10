@@ -86,6 +86,7 @@ sudo mv build/task /usr/local/bin/
 
 ## 📁 Project Structure
 
+```text
 .
 ├── CMakeLists.txt     # CMake cross-platform build configuration
 ├── Colors.hpp         # ANSI Escape sequences for terminal formatting
